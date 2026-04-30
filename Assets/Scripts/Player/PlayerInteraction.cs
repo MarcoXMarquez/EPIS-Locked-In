@@ -33,20 +33,30 @@ public class PlayerInteraction : MonoBehaviour
         hasHit = Physics.SphereCast(ray, detectionRadius, out lastHit, interactionDistance, interactableLayer);
 
         
-        if (hasHit)
+         if (hasHit)
         {
-            ItemWorldObject item = lastHit.collider.GetComponent<ItemWorldObject>();
-            if (item != null)
+            // CASO A: Es un ítem para recoger (Lo que ya tenías)
+            ItemWorldObject itemMundo = lastHit.collider.GetComponent<ItemWorldObject>();
+            if (itemMundo != null)
             {
-                ShowUI(item.itemData.itemName);
-
-                if (Input.GetKeyDown(KeyCode.E) && !anim.GetCurrentAnimatorStateInfo(0).IsName("Action_PickUp"))
-                {
-                    // 1. Guardamos la referencia del ítem
-                    currentPendingItem = item;
-                    
-                    // 2. Disparamos la animación
+                ShowUI(itemMundo.itemData.itemName);
+                if (Input.GetKeyDown(KeyCode.E)) {
+                    currentPendingItem = itemMundo; 
                     anim.SetTrigger("PickUp");
+                }
+            }
+
+            // CASO B: Es un objeto de PUZZLE (Lo nuevo)
+            PuzzleObject objetoPuzzle = lastHit.collider.GetComponent<PuzzleObject>();
+            if (objetoPuzzle != null)
+            {
+                ShowUI("Usar ítem en " + objetoPuzzle.name);
+
+                if (Input.GetKeyDown(KeyCode.E)) // O podrías usar Clic Derecho para "Usar"
+                {
+                    // Le preguntamos al Manager qué tenemos en la mano
+                    ItemData itemEnMano = Object.FindAnyObjectByType<InventoryManager>().GetSelectedItem();
+                    objetoPuzzle.IntentarUsar(itemEnMano);
                 }
             }
         }
