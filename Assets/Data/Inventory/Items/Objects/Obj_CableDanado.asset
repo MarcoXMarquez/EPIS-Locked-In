@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 51050a05a78d46f4c98940ea7d3334dc, type: 3}
-  m_Name: Data_TestObject
+  m_Name: Obj_CableDanado
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemName: Cube Test
+  itemName: Cable Danado
   description: This is just a test. This is just a test. This is just a test. This
     is just a test.
   type: 0
-  gridIcon: {fileID: 0}
-  detailImage: {fileID: 0}
+  gridIcon: {fileID: 2067162973, guid: 5de0331b32ad3d24c9b794a982137960, type: 3}
+  detailImage: {fileID: 2067162973, guid: 5de0331b32ad3d24c9b794a982137960, type: 3}

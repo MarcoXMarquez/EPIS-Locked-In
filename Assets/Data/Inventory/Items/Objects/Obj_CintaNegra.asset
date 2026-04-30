@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 51050a05a78d46f4c98940ea7d3334dc, type: 3}
-  m_Name: Data_TestObject 1
+  m_Name: Obj_CintaNegra
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemName: Cube Test
+  itemName: Cinta Negra
   description: This is just a test. This is just a test. This is just a test. This
     is just a test.
   type: 0
-  gridIcon: {fileID: 0}
-  detailImage: {fileID: 0}
+  gridIcon: {fileID: -1711173328, guid: 992adb2bc5a6c8044b7f0041929f3fe9, type: 3}
+  detailImage: {fileID: -1711173328, guid: 992adb2bc5a6c8044b7f0041929f3fe9, type: 3}
