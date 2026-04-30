@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using TMPro;
 
 // Añadimos las interfaces de arrastre
 public class InventorySlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler, IPointerClickHandler
@@ -22,19 +23,20 @@ public class InventorySlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
     }
 
     // --- INICIO DEL ARRASTRE ---
-    public void OnBeginDrag(PointerEventData eventData)
+  public void OnBeginDrag(PointerEventData eventData)
     {
+        // Si el slot no tiene data asignada, salimos
         if (itemContenido == null) return;
 
-        // Activamos el icono fantasma y le ponemos la imagen del ítem
+        manager.itemSiendoArrastrado = itemContenido;
+        manager.slotSiendoArrastrado = this;
+        
         manager.dragIconProxy.gameObject.SetActive(true);
         manager.dragIconProxy.sprite = itemContenido.gridIcon;
-        manager.itemSiendoArrastrado = itemContenido; // Guardamos qué estamos moviendo
         
-        // Opcional: Hacer que el icono original se vea más transparente mientras arrastras
-        slotImage.color = new Color(1, 1, 1, 0.5f);
+        // Opcional: bajar opacidad del icono original para feedback visual
+        transform.Find("Item_Icon_Img").GetComponent<Image>().color = new Color(1,1,1,0.5f);
     }
-
     // --- MIENTRAS SE ARRASTRA ---
     public void OnDrag(PointerEventData eventData)
     {
@@ -53,14 +55,47 @@ public class InventorySlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IEn
     }
 
     // Al soltar sobre un slot destino
-    public void OnDrop(PointerEventData eventData)
+   public void OnDrop(PointerEventData eventData)
     {
-        if (manager.itemSiendoArrastrado != null && manager.itemSiendoArrastrado != itemContenido)
+        if (manager.itemSiendoArrastrado == null) return;
+
+        bool origenEsHotbar = manager.slotSiendoArrastrado.transform.parent.name == "Inv_Slot_Group";
+        bool destinoEsHotbar = transform.parent.name == "Inv_Slot_Group";
+
+        // Si soltamos un slot sobre OTRO slot...
+        if (origenEsHotbar && !destinoEsHotbar) // Hotbar -> Slot ocupado en Mochila
+        {
+            int indexOrigen = manager.slotSiendoArrastrado.transform.GetSiblingIndex();
+            manager.AddItem(manager.itemSiendoArrastrado);
+            manager.hotbarItems[indexOrigen] = null;
+        }
+        else if (!origenEsHotbar && destinoEsHotbar) // Mochila -> Hotbar
+        {
+            int indexDestino = transform.GetSiblingIndex();
+            if (manager.hotbarItems[indexDestino] != null) manager.AddItem(manager.hotbarItems[indexDestino]);
+            manager.hotbarItems[indexDestino] = manager.itemSiendoArrastrado;
+            RemoveFromMochila(manager.itemSiendoArrastrado);
+        }
+        else if (origenEsHotbar && destinoEsHotbar) // Hotbar -> Hotbar
+        {
+            int indexOrigen = manager.slotSiendoArrastrado.transform.GetSiblingIndex();
+            int indexDestino = transform.GetSiblingIndex();
+            ItemData temp = manager.hotbarItems[indexDestino];
+            manager.hotbarItems[indexDestino] = manager.itemSiendoArrastrado;
+            manager.hotbarItems[indexOrigen] = temp;
+        }
+        else if (!origenEsHotbar && !destinoEsHotbar && manager.itemSiendoArrastrado != itemContenido) // Mochila -> Mochila (Combinar)
         {
             manager.TryCombine(manager.itemSiendoArrastrado, itemContenido);
-            
-            // Limpiamos inmediatamente después de intentar combinar
-            manager.CleanDragAndDrop();
         }
+
+        manager.UpdateInventoryUI();
+        manager.CleanDragAndDrop();
+    }
+  void RemoveFromMochila(ItemData item)
+    {
+        if (manager.listaObjetos.Contains(item)) manager.listaObjetos.Remove(item);
+        if (manager.listaContactos.Contains(item)) manager.listaContactos.Remove(item);
+        if (manager.listaLlaves.Contains(item)) manager.listaLlaves.Remove(item);
     }
 }

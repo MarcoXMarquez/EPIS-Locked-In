@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.Video;
 
 public class InventoryManager : MonoBehaviour
 {
@@ -41,19 +42,38 @@ public class InventoryManager : MonoBehaviour
     [Header("Arrastre (Drag & Drop)")]
     public Image dragIconProxy;
     [HideInInspector] public ItemData itemSiendoArrastrado;
+    [HideInInspector] public InventorySlot slotSiendoArrastrado;
+    [Header("Hotbar System")]
+    public RectTransform selectionFrame; 
+    public Vector2 selectionOffset;
+    public List<ItemData> hotbarItems = new List<ItemData>(9); 
+    private int selectedSlotIndex = 0; 
 
     private string currentTab = "objetos";
     private bool isInventoryOpen = false;
-
+    void Awake()
+    {
+        selectionFrame.gameObject.SetActive(false);
+    }
     void Start()
     {
         fullMenuOverlay.SetActive(false);
-        UpdateInventoryUI();
-    }
+        StartCoroutine(InitHotbarRoutine());
 
+    }
+    // Corrutina para asegurar que la hotbar se inicialice correctamente después de que el UI se haya configurado
+    System.Collections.IEnumerator InitHotbarRoutine()
+    {
+        UpdateInventoryUI();
+        yield return new WaitForEndOfFrame();
+        SetSelectedSlot(0);
+    }
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.I)) ToggleInventory();
+        if (isInventoryOpen == false) HandleHotbarInput();
+        if(Application.isPlaying) SetSelectedSlot(selectedSlotIndex); 
+
     }
 
     // Control de apertura/cierre y estado del mouse
@@ -129,6 +149,33 @@ public class InventoryManager : MonoBehaviour
         if (listaObjetos.Contains(item)) listaObjetos.Remove(item);
         if (listaContactos.Contains(item)) listaContactos.Remove(item);
         if (listaLlaves.Contains(item)) listaLlaves.Remove(item);
+
+        // 2. Borrar de la Hotbar (Módulo 2)
+        for (int i = 0; i < hotbarItems.Count; i++)
+        {
+            if (hotbarItems[i] == item)
+            {
+                hotbarItems[i] = null; // Quitamos la data
+                ClearHotbarSlotVisual(i); // Limpiamos la imagen de la barra de abajo
+            }
+        }
+    }
+    public void ClearHotbarSlotVisual(int index)
+    {
+        // Buscamos el slot físico en la barra de abajo
+        Transform slotGroup = hudBarRect.transform.Find("Inv_Background_Bar_Img/Inv_Slot_Group");
+        if (slotGroup != null)
+        {
+            Transform slot = slotGroup.GetChild(index);
+            
+            // Apagamos icono y texto (lo mismo que hacía tu Initializer)
+            Image img = slot.Find("Item_Icon_Img").GetComponent<Image>();
+            img.enabled = false;
+            img.color = new Color(1, 1, 1, 0);
+
+            TMPro.TextMeshProUGUI txt = slot.GetComponentInChildren<TMPro.TextMeshProUGUI>();
+            if (txt != null) txt.text = "";
+        }
     }
 
     // Cambio visual y lógico entre pestañas
@@ -151,7 +198,7 @@ public class InventoryManager : MonoBehaviour
     }
 
     // Refrescar los slots visuales en el Grid activo
-    void UpdateInventoryUI()
+    public void UpdateInventoryUI()
     {
         List<ItemData> listaActual = (currentTab == "objetos") ? listaObjetos : (currentTab == "contactos") ? listaContactos : listaLlaves;
         Transform contenedorActual = (currentTab == "objetos") ? containerObjetos : (currentTab == "contactos") ? containerContactos : containerLlaves;
@@ -174,6 +221,56 @@ public class InventoryManager : MonoBehaviour
         detailNameText.text = ""; 
         detailDescriptionText.text = "Selecciona un objeto";
         detailMainImage.enabled = false;
+        UpdateHotbarUI();
+
+    }
+    public void UpdateHotbarUI()
+    {
+        // Buscamos el grupo de slots de la barra
+        Transform slotGroup = hudBarRect.transform.Find("Inv_Background_Bar_Img/Inv_Slot_Group");
+        
+        for (int i = 0; i < hotbarItems.Count; i++)
+        {
+            Transform slot = slotGroup.GetChild(i);
+            InventorySlot slotScript = slot.GetComponent<InventorySlot>();
+            
+            // Buscamos Icono y Texto
+            Image iconImage = slot.Find("Item_Icon_Img").GetComponent<Image>();
+            TMPro.TextMeshProUGUI textComp = slot.GetComponentInChildren<TMPro.TextMeshProUGUI>();
+
+            if (hotbarItems[i] != null)
+            {
+                slotScript.itemContenido = hotbarItems[i];
+                
+                // Sincronizar Icono
+                iconImage.sprite = hotbarItems[i].gridIcon;
+                iconImage.enabled = true;
+                iconImage.color = Color.white;
+
+                // Sincronizar Texto (NUEVO)
+                if (textComp != null)
+                {
+                    textComp.text = hotbarItems[i].itemName;
+                    textComp.enabled = true;
+                    textComp.color = Color.white; // Alpha al 100%
+                }
+            }
+            else
+            {
+                slotScript.itemContenido = null;
+                
+                // Limpiar Icono
+                iconImage.enabled = false;
+                iconImage.color = new Color(1, 1, 1, 0);
+
+                // Limpiar Texto (NUEVO)
+                if (textComp != null)
+                {
+                    textComp.text = "";
+                    textComp.enabled = false;
+                }
+            }
+        }
     }
 
     // Animación suave de la barra HUD
@@ -203,5 +300,80 @@ public class InventoryManager : MonoBehaviour
         detailDescriptionText.text = data.description;
         detailMainImage.sprite = data.detailImage;
         detailMainImage.enabled = true;
+    }
+    void HandleHotbarInput()
+    {
+        // 1. Selección por Teclado (Alpha1 es la tecla 1, Alpha2 la 2...)
+        for (int i = 0; i < 9; i++)
+        {
+            if (Input.GetKeyDown(KeyCode.Alpha1 + i))
+            {
+                SetSelectedSlot(i);
+            }
+        }
+
+        // 2. Selección por Rueda del Mouse (Scroll)
+        float scroll = Input.GetAxis("Mouse ScrollWheel");
+        if (scroll != 0)
+        {
+            // Si scroll > 0 vamos a la izquierda, si < 0 a la derecha
+            int step = scroll > 0 ? -1 : 1;
+            int newIndex = selectedSlotIndex + step;
+            
+            // Loop: Si pasas del 8 vuelve al 0, si bajas del 0 vuelve al 8
+            if (newIndex > 8) newIndex = 0;
+            if (newIndex < 0) newIndex = 8;
+            
+            SetSelectedSlot(newIndex);
+        }
+    }
+    public void SetSelectedSlot(int index)
+    {
+        if (hudBarRect == null || selectionFrame == null) return;
+
+        selectedSlotIndex = index;
+
+        // Buscamos el grupo de slots
+        Transform slotGroup = hudBarRect.transform.Find("Inv_Background_Bar_Img/Inv_Slot_Group");
+        
+        if (slotGroup != null && index < slotGroup.childCount)
+        {
+            // 1. Obtenemos el slot objetivo
+            RectTransform targetSlot = slotGroup.GetChild(index).GetComponent<RectTransform>();
+            
+            // 2. MAGIA DE INGENIERÍA: Igualamos la posición local del marco a la del slot
+            // y le sumamos nuestro offset cómodamente.
+            selectionFrame.anchoredPosition = targetSlot.anchoredPosition + selectionOffset;
+            
+            selectionFrame.gameObject.SetActive(true);
+        }
+
+        // Actualizar ítem en mano
+        if (index < hotbarItems.Count)
+        {
+            ItemData heldItem = hotbarItems[selectedSlotIndex];
+        }
+        selectionFrame.gameObject.SetActive(true); 
+    }
+    public ItemData GetSelectedItem()
+    {
+        if (selectedSlotIndex >= 0 && selectedSlotIndex < hotbarItems.Count)
+        {
+            return hotbarItems[selectedSlotIndex];
+        }
+        return null;
+    }
+    public void RemoveSelectedItem()
+    {
+        // 1. Borramos la data de la lista de la Hotbar
+        hotbarItems[selectedSlotIndex] = null;
+
+        // 2. Refrescamos la UI para que desaparezca visualmente
+        UpdateHotbarUI();
+        
+        // 3. (Opcional) Limpiar el panel de detalles si estaba mostrando ese ítem
+        detailNameText.text = "";
+        detailDescriptionText.text = "Selecciona un objeto";
+        detailMainImage.enabled = false;
     }
 }

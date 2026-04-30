@@ -1,5 +1,5 @@
 using UnityEngine;
-using System.Collections; // Necesario para las Corrutinas
+using System.Collections;
 
 [RequireComponent(typeof(CharacterController))]
 public class PlayerMovement : MonoBehaviour
@@ -22,8 +22,12 @@ public class PlayerMovement : MonoBehaviour
     public float normalTargetHeight = 1.5f;
     public float crouchTargetHeight = 0.8f;
 
+    [Header("Suavizado de Rotación (Fix Tirones)")]
+    public float rotationSmoothTime = 0.05f; // Tiempo de suavizado para eliminar saltos
+    private float currentRotationVelocity;
+    private float horizontalRotation;
+
     [Header("Ajustes de Transición")]
-    [Tooltip("Tiempo que tarda en bajar/subir la cámara. Ajustar según la velocidad de la animación en el Animator.")]
     public float crouchTransitionTime = 0.5f; 
     private bool isTransitioning = false;
 
@@ -32,10 +36,12 @@ public class PlayerMovement : MonoBehaviour
     private InventoryManager inventory;
     private Vector3 velocity; 
     private Transform cam;
+
     [Header("Ajustes de Cámara Vertical")]
-    public float minPitch = -20f; // Límite para mirar hacia arriba
-    public float maxPitch = 45f;  // Límite para mirar hacia abajo (suelo)
+    public float minPitch = -20f; 
+    public float maxPitch = 45f;  
     private float verticalRotation = 0f;
+
     void Start()
     {
         controller = GetComponent<CharacterController>();
@@ -44,49 +50,48 @@ public class PlayerMovement : MonoBehaviour
         
         inventory = Object.FindAnyObjectByType<InventoryManager>();
 
-        // Bloquear cursor al inicio
+        // Inicializar la rotación horizontal con la actual del personaje
+        horizontalRotation = transform.eulerAngles.y;
+
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
 
     void Update()
     {
-        // 1. SEGURIDAD: Si el inventario está abierto, no hacemos nada
         if ((inventory != null && inventory.fullMenuOverlay.activeSelf) || 
          anim.GetCurrentAnimatorStateInfo(0).IsName("Action_PickUp"))
         {
             StopMovement();
             return;
         }
-        // 2. SEGURIDAD: Si está agachándose o levantándose, solo aplicamos gravedad
+
         if (isTransitioning)
         {
             ApplyGravity();
             return;
         }
 
-        // 3. Ejecutar movimiento normal
         Move();
     }
 
     void Move()
     {
-        // --- ROTACIÓN CON EL MOUSE ---
+        // --- ROTACIÓN CON EL MOUSE (CORREGIDA PARA TIRONES) ---
         if (!(inventory != null && inventory.fullMenuOverlay.activeSelf) && !isTransitioning)
         {
-            // Rotación Horizontal (Gira el cuerpo del personaje)
-            float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
-            transform.Rotate(Vector3.up * mouseX);
+            // Usamos GetAxisRaw para obtener el movimiento puro del mouse sin suavizado de Unity
+            float mouseX = Input.GetAxisRaw("Mouse X") * mouseSensitivity * Time.deltaTime;
+            float mouseY = Input.GetAxisRaw("Mouse Y") * mouseSensitivity * Time.deltaTime;
 
-            // Rotación Vertical (Gira el OBJETIVO de la cámara)
-            float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
-            verticalRotation -= mouseY; // Invertimos para que sea intuitivo
-            
-            // LIMITAR LA ROTACIÓN (Clamping)
-            // Esto evita que la cámara de la vuelta completa o vea debajo del suelo
+            // Rotación Horizontal: Calculamos el destino y suavizamos el ángulo
+            horizontalRotation += mouseX;
+            float smoothedYAngle = Mathf.SmoothDampAngle(transform.eulerAngles.y, horizontalRotation, ref currentRotationVelocity, rotationSmoothTime);
+            transform.rotation = Quaternion.Euler(0f, smoothedYAngle, 0f);
+
+            // Rotación Vertical: Se mantiene igual pero con GetAxisRaw para consistencia
+            verticalRotation -= mouseY; 
             verticalRotation = Mathf.Clamp(verticalRotation, minPitch, maxPitch);
-            
-            // Aplicamos la rotación local solo al CameraTarget
             cameraTarget.localRotation = Quaternion.Euler(verticalRotation, 0f, 0f);
         }
 
@@ -112,7 +117,6 @@ public class PlayerMovement : MonoBehaviour
         anim.SetFloat("VelY", Mathf.Lerp(anim.GetFloat("VelY"), animSpeedY, Time.deltaTime * 10f));
         anim.SetFloat("VelX", Mathf.Lerp(anim.GetFloat("VelX"), animSpeedX, Time.deltaTime * 10f));
 
-        // --- ACTIVAR TRANSICIÓN DE AGACHADO ---
         if (Input.GetKeyDown(KeyCode.C))
         {
             StartCoroutine(CrouchRoutine());
@@ -132,15 +136,10 @@ public class PlayerMovement : MonoBehaviour
     IEnumerator CrouchRoutine()
     {
         isTransitioning = true;
-        
-        // Determinar estado objetivo
         bool currentlyCrouching = anim.GetBool("isCrouching");
         bool targetCrouch = !currentlyCrouching;
-        
-        // Activar animación
         anim.SetBool("isCrouching", targetCrouch);
 
-        // Guardar valores iniciales para la interpolación (Lerp)
         Vector3 startCamPos = cameraTarget.localPosition;
         Vector3 endCamPos = new Vector3(0, targetCrouch ? crouchTargetHeight : normalTargetHeight, 0);
         
@@ -154,13 +153,9 @@ public class PlayerMovement : MonoBehaviour
         while (elapsed < crouchTransitionTime)
         {
             float t = elapsed / crouchTransitionTime;
-            // Curva de suavizado (SmoothStep)
             t = t * t * (3f - 2f * t);
 
-            // Interpolar cámara
             cameraTarget.localPosition = Vector3.Lerp(startCamPos, endCamPos, t);
-            
-            // Interpolar cápsula de colisión
             controller.height = Mathf.Lerp(startHeight, endHeight, t);
             controller.center = Vector3.Lerp(startCenter, endCenter, t);
 
@@ -168,11 +163,9 @@ public class PlayerMovement : MonoBehaviour
             yield return null;
         }
 
-        // Asegurar valores finales exactos
         cameraTarget.localPosition = endCamPos;
         controller.height = endHeight;
         controller.center = endCenter;
-
         isTransitioning = false;
     }
 
