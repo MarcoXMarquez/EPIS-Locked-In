@@ -46,4 +46,8 @@ public class PuzzleObject : MonoBehaviour
             Debug.Log("<color=orange>IA:</color> " + mensajeSiItemEquivocado);
         }
     }
+    public void destroyWall(GameObject wall)
+    {
+        Destroy(wall);
+    }
 }
