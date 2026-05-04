@@ -1,109 +1,140 @@
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 
+// Eliminamos System.Numerics y Unity.Mathematics para evitar conflictos
 public class PlayerInteraction : MonoBehaviour
 {
     [Header("Ajustes de Detección")]
-    public float interactionDistance = 5f; 
-    public float detectionRadius = 0.3f;   
+    public float interactionDistance = 7f; 
+    public float detectionRadius = 0.5f;   
     public LayerMask interactableLayer;    
 
     [Header("UI Feedback")]
     public GameObject promptPanel;         
     public TextMeshProUGUI promptText;     
 
-    private Camera mainCam;
-    private RaycastHit lastHit; // Guardamos el hit para el Gizmo
-    private bool hasHit;
+    [Header("Cursores Dinámicos")]
+    public Image cursorImage;          
+    public Sprite cursorDefault;      
+    public Sprite cursorItem;         
+    public Sprite cursorPuzzle;     
+
+    [Header("Ajustes de Inercia (Sway)")]
+    public RectTransform cursorRect;
+    public float swayIntensity = 0.02f; // Ajustado para sensibilidades altas
+    public float maxSway = 50f;
+    public float returnSpeed = 8f;
 
     [Header("Sincronización")]
     public Animator anim;
+    
+    private Camera mainCam;
+    private RaycastHit lastHit; 
+    private bool hasHit;
     private ItemWorldObject currentPendingItem;
+    private PlayerMovement playerMovement;
+    private Vector2 currentSwayPos; // Vector2 estándar de Unity
+
     void Start()
     {
         mainCam = Camera.main;
+        anim = GetComponent<Animator>();
+        playerMovement = GetComponent<PlayerMovement>();
+        
         if (promptPanel != null) promptPanel.SetActive(false);
+        if (cursorImage != null) cursorImage.sprite = cursorDefault;
     }
 
     void Update()
     {
-        // Rayo desde el centro de la pantalla
-        Ray ray = mainCam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-        
-        hasHit = Physics.SphereCast(ray, detectionRadius, out lastHit, interactionDistance, interactableLayer);
+        // 1. Detección por Raycast/SphereCast
+        HandleDetection();
 
-        
-         if (hasHit)
-        {
-            // CASO A: Es un ítem para recoger (Lo que ya tenías)
-            ItemWorldObject itemMundo = lastHit.collider.GetComponent<ItemWorldObject>();
-            if (itemMundo != null)
-            {
-                ShowUI(itemMundo.itemData.itemName);
-                if (Input.GetKeyDown(KeyCode.E)) {
-                    currentPendingItem = itemMundo; 
-                    anim.SetTrigger("PickUp");
-                }
-            }
-
-            // CASO B: Es un objeto de PUZZLE (Lo nuevo)
-            PuzzleObject objetoPuzzle = lastHit.collider.GetComponent<PuzzleObject>();
-            if (objetoPuzzle != null)
-            {
-                ShowUI("Usar ítem en " + objetoPuzzle.name);
-
-                if (Input.GetKeyDown(KeyCode.E)) // O podrías usar Clic Derecho para "Usar"
-                {
-                    // Le preguntamos al Manager qué tenemos en la mano
-                    ItemData itemEnMano = Object.FindAnyObjectByType<InventoryManager>().GetSelectedItem();
-                    objetoPuzzle.IntentarUsar(itemEnMano);
-                }
-            }
-        }
-        else
-        {
-            HideUI();
-        }
+        // 2. Movimiento visual del cursor (Sway)
+        HandleCursorSway();
     }
 
-    // GIZMOS MEJORADOS
-    void OnDrawGizmos()
+    void HandleDetection()
     {
-        if (mainCam == null) mainCam = Camera.main;
-        if (mainCam == null) return;
-
         Ray ray = mainCam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-        float dist = hasHit ? lastHit.distance : interactionDistance;
-
-        // Color según impacto
-        Gizmos.color = hasHit ? new Color(0, 1, 0, 0.4f) : new Color(1, 0, 0, 0.4f);
-
-        // DIBUJAR EL TÚNEL (Varios pasos para ver el grosor)
-        int stepCount = 5;
-        for (int i = 0; i <= stepCount; i++)
-        {
-            float stepDist = (dist / stepCount) * i;
-            Vector3 point = ray.GetPoint(stepDist);
-            Gizmos.DrawWireSphere(point, detectionRadius);
-        }
-
-        // ESFERA DE IMPACTO (Sólida y grande)
-        Gizmos.color = hasHit ? Color.green : Color.red;
-        Vector3 finalPoint = ray.GetPoint(dist);
-        Gizmos.DrawSphere(finalPoint, detectionRadius);
+        hasHit = Physics.SphereCast(ray, detectionRadius, out lastHit, interactionDistance, interactableLayer);
 
         if (hasHit)
         {
-            Gizmos.color = Color.yellow;
-            Gizmos.DrawWireCube(lastHit.collider.bounds.center, lastHit.collider.bounds.size + Vector3.one * 0.1f);
+            // CASO A: Ítem para recoger
+            ItemWorldObject itemMundo = lastHit.collider.GetComponent<ItemWorldObject>();
+            if (itemMundo != null)
+            {
+                SetCursor(cursorItem);
+                ShowUI("Recoger " + itemMundo.itemData.itemName);
+                if (Input.GetKeyDown(KeyCode.E) || Input.GetMouseButtonDown(0)) 
+                {
+                    currentPendingItem = itemMundo; 
+                    anim.SetTrigger("PickUp");
+                }
+                return;
+            }
+
+            // CASO B: Objeto de PUZZLE
+            PuzzleObject puzzle = lastHit.collider.GetComponent<PuzzleObject>();
+            if (puzzle != null)
+            {
+                SetCursor(cursorPuzzle); // Cambiado a cursorPuzzle para diferenciar
+                ShowUI("Usar objeto en " + puzzle.name);
+                if (Input.GetKeyDown(KeyCode.E) || Input.GetMouseButtonDown(0)) 
+                {
+                    InventoryManager inv = Object.FindAnyObjectByType<InventoryManager>();
+                    puzzle.IntentarUsar(inv.GetSelectedItem());
+                }
+                return;
+            }
         }
+
+        // CASO C: Nada detectado
+        SetCursor(cursorDefault);
+        HideUI();
     }
+
+    void HandleCursorSway()
+    {
+        if (cursorRect == null || playerMovement == null) return;
+
+        // Obtenemos input puro para evitar doble suavizado
+        float mouseX = Input.GetAxisRaw("Mouse X");
+        float mouseY = Input.GetAxisRaw("Mouse Y");
+        float sens = playerMovement.mouseSensitivity;
+
+        // Calculamos el objetivo (Multiplicamos por -1 para el efecto de retraso)
+        Vector2 targetSway = new Vector2(-mouseX * sens, -mouseY * sens) * swayIntensity;
+
+        // Limitamos para que no se salga de la zona central
+        targetSway.x = Mathf.Clamp(targetSway.x, -maxSway, maxSway);
+        targetSway.y = Mathf.Clamp(targetSway.y, -maxSway, maxSway);
+
+        // Interpolación suave
+        currentSwayPos = Vector2.Lerp(currentSwayPos, targetSway, Time.deltaTime * returnSpeed);  
+        
+        // Aplicamos posición y una rotación sutil
+        cursorRect.anchoredPosition = currentSwayPos;
+        float tiltZ = -currentSwayPos.x * 0.5f;
+        cursorRect.localRotation = Quaternion.Euler(0, 0, tiltZ);
+    }
+
+    void SetCursor(Sprite newSprite)
+    {
+        if (cursorImage == null || cursorImage.sprite == newSprite) return;
+        
+        cursorImage.sprite = newSprite;
+        cursorImage.rectTransform.localScale = (newSprite == cursorDefault) ? Vector3.one : new Vector3(1.2f, 1.2f, 1f);
+    }
+
     void ShowUI(string name)
     {
         if (promptPanel != null)
         {
             promptPanel.SetActive(true);
-            promptText.text = "Presiona [E] para recoger " + name;
+            promptText.text = name;
         }
     }
 
@@ -111,12 +142,22 @@ public class PlayerInteraction : MonoBehaviour
     {
         if (promptPanel != null) promptPanel.SetActive(false);
     }
+
     public void OnPickUpAnimationEvent()
     {
         if (currentPendingItem != null)
         {
-            currentPendingItem.PickUp(); // Aquí es donde realmente se suma al inventario y se destruye
+            currentPendingItem.PickUp();
             currentPendingItem = null;
         }
+    }
+
+    // GIZMOS DE DEPURACIÓN
+    void OnDrawGizmos()
+    {
+        if (mainCam == null) return;
+        Ray ray = mainCam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+        Gizmos.color = hasHit ? Color.green : Color.red;
+        Gizmos.DrawRay(ray.origin, ray.direction * interactionDistance);
     }
 }
