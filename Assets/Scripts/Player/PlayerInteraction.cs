@@ -90,17 +90,7 @@ public class PlayerInteraction : MonoBehaviour
                 return;
             }
         }
-    InteractiveDoor door = lastHit.collider.GetComponentInParent<InteractiveDoor>();
-    if (door != null)
-    {
-        SetCursor(cursorPuzzle); // Cambia al icono de engranaje
-        ShowUI("Abrir Puerta");
-        if (Input.GetKeyDown(KeyCode.E))
-        {
-            door.OnDoorInteract(gameObject); // 'gameObject' es el Player
-        }
-        return;
-    }
+
         // CASO C: Nada detectado
         SetCursor(cursorDefault);
         HideUI();
