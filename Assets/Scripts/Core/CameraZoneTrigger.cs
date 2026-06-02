@@ -8,55 +8,64 @@ public class CameraZoneTrigger : MonoBehaviour
     public CinemachineCamera backCamera; 
     public CinemachineCamera fpsCamera;  
 
+    [Header("Referencias de Targets")]
+    public Transform targetNormal; // Arrastra el "CameraTarget" original
+    public Transform targetAlt;    // Arrastra el "CameraTarget(1)"
+
     [Header("Configuración de Prioridades")]
     public int highPriority = 20;
     public int lowPriority = 5;
 
     [Header("Sincronización de Cuerpo")]
-    [Tooltip("Debe coincidir con el Default Blend del Cinemachine Brain")]
     public float blendDuration = 0.5f;
 
     void Start()
     {
-        // Estado inicial: TPS activa por defecto
         if (backCamera != null) backCamera.Priority = highPriority;
         if (fpsCamera != null) fpsCamera.Priority = lowPriority;
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        // Mantenemos tu estructura de IFs para detectar al Player
         if (other.CompareTag("Player"))
         {
-            StopAllCoroutines(); // Evita errores si pasas muy rápido
+            StopAllCoroutines();
             Renderer[] allRenderers = other.GetComponentsInChildren<Renderer>(true);
+            
+            // Obtenemos el script de movimiento para cambiar el target
+            PlayerMovement pMove = other.GetComponent<PlayerMovement>();
 
-            // Si la cámara actual es la de ESPALDA, cambiamos a PRIMERA PERSONA
             if (fpsCamera.Priority == lowPriority)
             {
+                // 1. CAMBIO DE CÁMARA
                 fpsCamera.Priority = highPriority;
                 backCamera.Priority = lowPriority;
 
-                // Esperamos a que la cámara llegue a los ojos para ocultar el cuerpo
+                // 2. CAMBIO DE TARGET EN EL SCRIPT DEL PLAYER
+                if (pMove != null) pMove.cameraTarget = targetAlt;
+
+                // 3. OCULTAR CUERPO
                 StartCoroutine(ToggleRenderersWithDelay(allRenderers, false, blendDuration));
                 
-                Debug.Log("<color=cyan>SISTEMA:</color> Modo FPS Activado");
+                Debug.Log("<color=cyan>SISTEMA:</color> Modo FPS - Target Alternativo Activo");
             }
-            // Si ya estábamos en FPS, volvemos a TERCERA PERSONA
             else
             {
-                // Mostramos el cuerpo INMEDIATAMENTE para que se vea la espalda al alejarse
+                // 1. MOSTRAR CUERPO
                 foreach (Renderer r in allRenderers) if (r != null) r.enabled = true;
 
+                // 2. CAMBIO DE TARGET EN EL SCRIPT DEL PLAYER (Volver al normal)
+                if (pMove != null) pMove.cameraTarget = targetNormal;
+
+                // 3. CAMBIO DE CÁMARA
                 fpsCamera.Priority = lowPriority;
                 backCamera.Priority = highPriority;
 
-                Debug.Log("<color=yellow>SISTEMA:</color> Modo TPS Restaurado");
+                Debug.Log("<color=yellow>SISTEMA:</color> Modo TPS - Target Normal Restaurado");
             }
         }
     }
 
-    // Función auxiliar para el retraso
     private IEnumerator ToggleRenderersWithDelay(Renderer[] renderers, bool state, float delay)
     {
         yield return new WaitForSeconds(delay);

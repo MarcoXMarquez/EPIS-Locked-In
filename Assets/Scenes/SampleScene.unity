@@ -804,6 +804,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CameraZoneTrigger
   backCamera: {fileID: 1665277728}
   fpsCamera: {fileID: 798588390}
+  targetNormal: {fileID: 0}
+  targetAlt: {fileID: 0}
   highPriority: 20
   lowPriority: 5
   blendDuration: 0.3
@@ -2042,6 +2044,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CameraZoneTrigger
   backCamera: {fileID: 1665277728}
   fpsCamera: {fileID: 798588390}
+  targetNormal: {fileID: 0}
+  targetAlt: {fileID: 0}
   highPriority: 20
   lowPriority: 5
   blendDuration: 0.3
@@ -2382,6 +2386,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CameraZoneTrigger
   backCamera: {fileID: 1665277728}
   fpsCamera: {fileID: 798588390}
+  targetNormal: {fileID: 0}
+  targetAlt: {fileID: 0}
   highPriority: 20
   lowPriority: 5
   blendDuration: 0.3
@@ -5643,6 +5649,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CameraZoneTrigger
   backCamera: {fileID: 1665277728}
   fpsCamera: {fileID: 798588390}
+  targetNormal: {fileID: 0}
+  targetAlt: {fileID: 0}
   highPriority: 20
   lowPriority: 5
   blendDuration: 0.3
@@ -6526,6 +6534,7 @@ GameObject:
   - component: {fileID: 798588388}
   - component: {fileID: 798588390}
   - component: {fileID: 798588389}
+  - component: {fileID: 798588391}
   m_Layer: 0
   m_Name: 'CM_FPS_Camera '
   m_TagString: Untagged
@@ -6541,7 +6550,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 798588385}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0.16018225, y: 0, z: 0, w: 0.9870875}
   m_LocalPosition: {x: 28.539, y: 1.6576692, z: 0.93285966}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -6595,8 +6604,8 @@ MonoBehaviour:
   m_LegacyPriority: 0
   Target:
     TrackingTarget: {fileID: 1625727300}
-    LookAtTarget: {fileID: 0}
-    CustomLookAtTarget: 0
+    LookAtTarget: {fileID: 1625727300}
+    CustomLookAtTarget: 1
   Lens:
     FieldOfView: 40
     OrthographicSize: 10
@@ -6617,6 +6626,35 @@ MonoBehaviour:
       BarrelClipping: 0.25
       Anamorphism: 0
   BlendHint: 0
+--- !u!114 &798588391
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 798588385}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f38bda98361e1de48a4ca2bd86ea3c17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineRotationComposer
+  Composition:
+    ScreenPosition: {x: 0, y: 0}
+    DeadZone:
+      Enabled: 0
+      Size: {x: 0.2, y: 0.2}
+    HardLimits:
+      Enabled: 0
+      Size: {x: 0.8, y: 0.8}
+      Offset: {x: 0, y: 0}
+  CenterOnActivate: 1
+  TargetOffset: {x: 0, y: 0, z: 0}
+  Damping: {x: 0.5, y: 0.5}
+  Lookahead:
+    Enabled: 0
+    Time: 0
+    Smoothing: 0
+    IgnoreY: 0
 --- !u!1 &807369677 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -5754060345647867467, guid: bb6b4c03c2d7e0346b79d5f619ed61d2, type: 3}
@@ -8334,6 +8372,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CameraZoneTrigger
   backCamera: {fileID: 1665277728}
   fpsCamera: {fileID: 798588390}
+  targetNormal: {fileID: 0}
+  targetAlt: {fileID: 0}
   highPriority: 20
   lowPriority: 5
   blendDuration: 0.3
@@ -8979,6 +9019,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CameraZoneTrigger
   backCamera: {fileID: 1665277728}
   fpsCamera: {fileID: 798588390}
+  targetNormal: {fileID: 477103834}
+  targetAlt: {fileID: 1625727300}
   highPriority: 20
   lowPriority: 5
   blendDuration: 0.3
@@ -10892,6 +10934,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CameraZoneTrigger
   backCamera: {fileID: 1665277728}
   fpsCamera: {fileID: 798588390}
+  targetNormal: {fileID: 0}
+  targetAlt: {fileID: 0}
   highPriority: 20
   lowPriority: 5
   blendDuration: 0.3
@@ -13255,7 +13299,7 @@ GameObject:
   - component: {fileID: 1665277729}
   - component: {fileID: 1665277728}
   - component: {fileID: 1665277727}
-  - component: {fileID: 1665277726}
+  - component: {fileID: 1665277730}
   m_Layer: 0
   m_Name: CM_Back_Camera
   m_TagString: Untagged
@@ -13263,35 +13307,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1665277726
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1665277725}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f38bda98361e1de48a4ca2bd86ea3c17, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineRotationComposer
-  Composition:
-    ScreenPosition: {x: 0, y: 0}
-    DeadZone:
-      Enabled: 0
-      Size: {x: 0.2, y: 0.2}
-    HardLimits:
-      Enabled: 0
-      Size: {x: 0.8, y: 0.8}
-      Offset: {x: 0, y: 0}
-  CenterOnActivate: 1
-  TargetOffset: {x: 0, y: 0, z: 0}
-  Damping: {x: 0.5, y: 0.5}
-  Lookahead:
-    Enabled: 0
-    Time: 0
-    Smoothing: 0
-    IgnoreY: 0
 --- !u!114 &1665277727
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13376,6 +13391,35 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1665277730
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1665277725}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f38bda98361e1de48a4ca2bd86ea3c17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineRotationComposer
+  Composition:
+    ScreenPosition: {x: 0, y: 0}
+    DeadZone:
+      Enabled: 0
+      Size: {x: 0.2, y: 0.2}
+    HardLimits:
+      Enabled: 0
+      Size: {x: 0.8, y: 0.8}
+      Offset: {x: 0, y: 0}
+  CenterOnActivate: 1
+  TargetOffset: {x: 0, y: 0, z: 0}
+  Damping: {x: 0.5, y: 0.5}
+  Lookahead:
+    Enabled: 0
+    Time: 0
+    Smoothing: 0
+    IgnoreY: 0
 --- !u!1001 &1673730714
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -16083,6 +16127,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CameraZoneTrigger
   backCamera: {fileID: 1665277728}
   fpsCamera: {fileID: 798588390}
+  targetNormal: {fileID: 0}
+  targetAlt: {fileID: 0}
   highPriority: 20
   lowPriority: 5
   blendDuration: 0.3
