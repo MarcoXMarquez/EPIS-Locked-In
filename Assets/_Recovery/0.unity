@@ -1415,7 +1415,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 9452ae1262a74094f8a68013fbcd1834, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -4647,7 +4647,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 9452ae1262a74094f8a68013fbcd1834, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -4778,7 +4778,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 9452ae1262a74094f8a68013fbcd1834, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -6996,6 +6996,10 @@ MonoBehaviour:
   detailMainImage: {fileID: 1422853024}
   dragIconProxy: {fileID: 45682712}
   itemSiendoArrastrado: {fileID: 0}
+  slotSiendoArrastrado: {fileID: 0}
+  selectionFrame: {fileID: 0}
+  selectionOffset: {x: 0, y: 0}
+  hotbarItems: []
 --- !u!1 &1736157867
 GameObject:
   m_ObjectHideFlags: 0
@@ -8914,6 +8918,7 @@ MonoBehaviour:
   mouseSensitivity: 100
   normalTargetHeight: 1.5
   crouchTargetHeight: 0.7
+  rotationSmoothTime: 0.05
   crouchTransitionTime: 0.5
   minPitch: -30
   maxPitch: 60
@@ -8961,6 +8966,14 @@ MonoBehaviour:
     m_Bits: 64
   promptPanel: {fileID: 664158443}
   promptText: {fileID: 1654083427}
+  cursorImage: {fileID: 0}
+  cursorDefault: {fileID: 0}
+  cursorItem: {fileID: 0}
+  cursorPuzzle: {fileID: 0}
+  cursorRect: {fileID: 0}
+  swayIntensity: 0.02
+  maxSway: 50
+  returnSpeed: 8
   anim: {fileID: 2114375144}
 --- !u!1 &2122762471
 GameObject:

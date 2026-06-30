@@ -1,6 +1,7 @@
 using UnityEngine;
 using Unity.Cinemachine; 
 using System.Collections;
+using UnityEngine.Rendering; // Necesario para controlar el Post-processing
 
 public class CameraZoneTrigger : MonoBehaviour
 {
@@ -9,8 +10,8 @@ public class CameraZoneTrigger : MonoBehaviour
     public CinemachineCamera fpsCamera;  
 
     [Header("Referencias de Targets")]
-    public Transform targetNormal; // Arrastra el "CameraTarget" original
-    public Transform targetAlt;    // Arrastra el "CameraTarget(1)"
+    public Transform targetNormal; 
+    public Transform targetAlt;    
 
     [Header("Configuración de Prioridades")]
     public int highPriority = 20;
@@ -19,10 +20,19 @@ public class CameraZoneTrigger : MonoBehaviour
     [Header("Sincronización de Cuerpo")]
     public float blendDuration = 0.5f;
 
+    [Header("Efectos Visuales (IA/Kernel)")]
+    public bool activarEfectoIA = true;    // Checkbox para decidir en el Inspector
+    public Volume volumenEfecto;           // Referencia al Volume local
+    public GameObject canvasIA;            // El Canvas de estilo cámara de seguridad
+
     void Start()
     {
         if (backCamera != null) backCamera.Priority = highPriority;
         if (fpsCamera != null) fpsCamera.Priority = lowPriority;
+        
+        // Aseguramos que los efectos empiecen apagados
+        if (volumenEfecto != null) volumenEfecto.weight = 0;
+        if (canvasIA != null) canvasIA.SetActive(false);
     }
 
     private void OnTriggerEnter(Collider other)
@@ -31,39 +41,57 @@ public class CameraZoneTrigger : MonoBehaviour
         {
             StopAllCoroutines();
             Renderer[] allRenderers = other.GetComponentsInChildren<Renderer>(true);
-            
-            // Obtenemos el script de movimiento para cambiar el target
             PlayerMovement pMove = other.GetComponent<PlayerMovement>();
 
             if (fpsCamera.Priority == lowPriority)
             {
-                // 1. CAMBIO DE CÁMARA
+                // MODO FPS (ENTRANDO)
                 fpsCamera.Priority = highPriority;
                 backCamera.Priority = lowPriority;
 
-                // 2. CAMBIO DE TARGET EN EL SCRIPT DEL PLAYER
                 if (pMove != null) pMove.cameraTarget = targetAlt;
 
-                // 3. OCULTAR CUERPO
                 StartCoroutine(ToggleRenderersWithDelay(allRenderers, false, blendDuration));
                 
-                Debug.Log("<color=cyan>SISTEMA:</color> Modo FPS - Target Alternativo Activo");
+                // ACTIVAR EFECTOS SI ESTÁ MARCADO
+                if (activarEfectoIA) {
+                    if (volumenEfecto != null) StartCoroutine(FadeVolume(1, blendDuration));
+                    if (canvasIA != null) canvasIA.SetActive(true);
+                }
+
+                Debug.Log("<color=cyan>SISTEMA:</color> Modo FPS + Efectos IA");
             }
             else
             {
-                // 1. MOSTRAR CUERPO
+                // MODO TPS (SALIENDO)
                 foreach (Renderer r in allRenderers) if (r != null) r.enabled = true;
 
-                // 2. CAMBIO DE TARGET EN EL SCRIPT DEL PLAYER (Volver al normal)
                 if (pMove != null) pMove.cameraTarget = targetNormal;
 
-                // 3. CAMBIO DE CÁMARA
                 fpsCamera.Priority = lowPriority;
                 backCamera.Priority = highPriority;
 
-                Debug.Log("<color=yellow>SISTEMA:</color> Modo TPS - Target Normal Restaurado");
+                // APAGAR EFECTOS
+                if (volumenEfecto != null) StartCoroutine(FadeVolume(0, blendDuration));
+                if (canvasIA != null) canvasIA.SetActive(false);
+
+                Debug.Log("<color=yellow>SISTEMA:</color> Modo TPS - Efectos Limpios");
             }
         }
+    }
+
+    // Corrutina para que el ruido de la cámara aparezca suavemente
+    private IEnumerator FadeVolume(float targetWeight, float duration)
+    {
+        float startWeight = volumenEfecto.weight;
+        float elapsed = 0;
+        while (elapsed < duration)
+        {
+            volumenEfecto.weight = Mathf.Lerp(startWeight, targetWeight, elapsed / duration);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        volumenEfecto.weight = targetWeight;
     }
 
     private IEnumerator ToggleRenderersWithDelay(Renderer[] renderers, bool state, float delay)

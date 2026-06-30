@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Linq;
 
 public class AutoMeshCollider : MonoBehaviour
 {
@@ -26,6 +27,20 @@ public class AutoMeshCollider : MonoBehaviour
         }
 
         Debug.Log($"<color=cyan>SISTEMA:</color> Proceso terminado. Se añadieron {addedCount} colliders. {skippedCount} ya tenían uno.");
+    }
+
+    [ContextMenu("Activate Static for Hierarchy")]
+
+    public void ActivateStatic()
+    {
+        Transform[] allObjects = GetComponentsInChildren<Transform>(true);
+
+        foreach (Transform obj in allObjects)
+        {
+            obj.gameObject.isStatic = true;
+        }
+
+        Debug.Log("<color=green>SISTEMA:</color> Todos los objetos en la jerarquía han sido marcados como estáticos.");
     }
 
     [ContextMenu("Remove All Colliders from Children")]
