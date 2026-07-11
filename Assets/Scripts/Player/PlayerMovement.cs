@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using System.Collections;
 
@@ -23,7 +24,7 @@ public class PlayerMovement : MonoBehaviour
     public float crouchTargetHeight = 0.8f;
 
     [Header("Suavizado de Rotación (Fix Tirones)")]
-    public float rotationSmoothTime = 0.05f; // Tiempo de suavizado para eliminar saltos
+    public float rotationSmoothTime = 0.05f; 
     private float currentRotationVelocity;
     private float horizontalRotation;
 
@@ -33,7 +34,7 @@ public class PlayerMovement : MonoBehaviour
 
     private CharacterController controller;
     private Animator anim;
-    private InventoryManager inventory;
+    private UIManager uiManager; // Cambiado de InventoryManager a UIManager
     private Vector3 velocity; 
     private Transform cam;
 
@@ -48,9 +49,9 @@ public class PlayerMovement : MonoBehaviour
         anim = GetComponent<Animator>();
         cam = Camera.main.transform;
         
-        inventory = Object.FindAnyObjectByType<InventoryManager>();
+        // Buscamos el UIManager en la escena
+        uiManager = Object.FindAnyObjectByType<UIManager>();
 
-        // Inicializar la rotación horizontal con la actual del personaje
         horizontalRotation = transform.eulerAngles.y;
 
         Cursor.lockState = CursorLockMode.Locked;
@@ -61,8 +62,11 @@ public class PlayerMovement : MonoBehaviour
     {
         ShikakuManager shikaku = Object.FindAnyObjectByType<ShikakuManager>();
 
-        // SEGURIDAD: Bloqueo si el inventario O el puzzle están abiertos
-        if ((inventory != null && inventory.fullMenuOverlay.activeSelf) || 
+        // Verificamos si el inventario o las pausas del UIManager están activas
+        bool isUIOpen = uiManager != null && (uiManager.inventoryLayer.activeSelf || uiManager.pauseLayer.activeSelf || uiManager.settingsLayer.activeSelf);
+
+        // SEGURIDAD: Bloqueo si la UI O el puzzle están abiertos
+        if (isUIOpen || 
             (shikaku != null && shikaku.isPuzzleActive) ||
             anim.GetCurrentAnimatorStateInfo(0).IsName("Action_PickUp"))
         {
@@ -71,24 +75,21 @@ public class PlayerMovement : MonoBehaviour
         }
 
         if (isTransitioning) { ApplyGravity(); return; }
-        Move();
+        Move(isUIOpen);
     }
 
-    void Move()
+    void Move(bool isUIOpen)
     {
-        // --- ROTACIÓN CON EL MOUSE (CORREGIDA PARA TIRONES) ---
-        if (!(inventory != null && inventory.fullMenuOverlay.activeSelf) && !isTransitioning)
+        // --- ROTACIÓN CON EL MOUSE ---
+        if (!isUIOpen && !isTransitioning)
         {
-            // Usamos GetAxisRaw para obtener el movimiento puro del mouse sin suavizado de Unity
             float mouseX = Input.GetAxisRaw("Mouse X") * mouseSensitivity * Time.deltaTime;
             float mouseY = Input.GetAxisRaw("Mouse Y") * mouseSensitivity * Time.deltaTime;
 
-            // Rotación Horizontal: Calculamos el destino y suavizamos el ángulo
             horizontalRotation += mouseX;
             float smoothedYAngle = Mathf.SmoothDampAngle(transform.eulerAngles.y, horizontalRotation, ref currentRotationVelocity, rotationSmoothTime);
             transform.rotation = Quaternion.Euler(0f, smoothedYAngle, 0f);
 
-            // Rotación Vertical: Se mantiene igual pero con GetAxisRaw para consistencia
             verticalRotation -= mouseY; 
             verticalRotation = Mathf.Clamp(verticalRotation, minPitch, maxPitch);
             cameraTarget.localRotation = Quaternion.Euler(verticalRotation, 0f, 0f);
@@ -175,3 +176,4 @@ public class PlayerMovement : MonoBehaviour
         ApplyGravity();
     }
 }
+
