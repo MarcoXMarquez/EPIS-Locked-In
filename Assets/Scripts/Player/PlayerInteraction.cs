@@ -62,6 +62,7 @@ public class PlayerInteraction : MonoBehaviour
 
         if (hasHit)
         {
+            Debug.Log($"Hit detected: {lastHit.collider.name} at distance {lastHit.distance}");
             // CASO A: Ítem para recoger
             ItemWorldObject itemMundo = lastHit.collider.GetComponent<ItemWorldObject>();
             if (itemMundo != null)
