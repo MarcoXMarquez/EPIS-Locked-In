@@ -1,52 +1,84 @@
 using UnityEngine;
 using System.Collections;
 
+/// <summary>
+/// Coloca este script en el GameObject raiz de la PUERTA (o en el hijo "Bisagra").
+/// El pivote del objeto debe estar en la esquina de la bisagra para que la rotacion sea correcta.
+/// Funciona para CUALQUIER puerta de la escena, no importa su nombre.
+/// </summary>
 public class InteractiveDoor : MonoBehaviour
 {
-    [Header("Configuración")]
-    public Transform playerSnapPoint; // ElInteraction_Point que creamos
-    public Animator doorAnimator;     // El animator de la bisagra (si tiene)
-    public float interactionDelay = 0.2f;
+    [Header("Configuracion de Apertura")]
+    [Tooltip("Angulo de apertura en grados. Positivo = abre hacia la derecha, negativo = hacia la izquierda.")]
+    public float openAngle = 90f;
 
+    [Tooltip("Segundos que tarda en abrirse o cerrarse")]
+    public float openDuration = 0.55f;
+
+    [Tooltip("Texto del prompt cuando la puerta esta cerrada")]
+    public string labelClosed = "Abrir puerta";
+
+    [Tooltip("Texto del prompt cuando la puerta esta abierta")]
+    public string labelOpen = "Cerrar puerta";
+
+    [Header("Animator (opcional)")]
+    [Tooltip("Si tienes un Animator asignado, se usara en lugar de la rotacion por codigo")]
+    public Animator doorAnimator;
+    public string openTrigger  = "Open";
+    public string closeTrigger = "Close";
+
+    // --- Estado interno ---
+    private bool isOpen = false;
     private bool isBusy = false;
+    private Quaternion closedRot;
+    private Quaternion openRot;
 
-    public void OnDoorInteract(GameObject player)
+    void Awake()
+    {
+        closedRot = transform.localRotation;
+        openRot   = closedRot * Quaternion.Euler(0f, 0f, openAngle);
+    }
+
+    /// <summary>
+    /// Llamado por PlayerInteraction cuando el jugador pulsa E cerca de esta puerta.
+    /// </summary>
+    public void Interact(GameObject player)
     {
         if (isBusy) return;
-        StartCoroutine(DoorSequence(player));
+
+        // Si hay Animator, delegamos en el
+        if (doorAnimator != null)
+        {
+            doorAnimator.SetTrigger(isOpen ? closeTrigger : openTrigger);
+            isOpen = !isOpen;
+            return;
+        }
+
+        // Sin Animator: rotacion suave por codigo
+        StartCoroutine(RotateDoor(isOpen ? closedRot : openRot));
+        isOpen = !isOpen;
     }
 
-    IEnumerator DoorSequence(GameObject player)
+    IEnumerator RotateDoor(Quaternion targetRot)
     {
         isBusy = true;
+        Quaternion startRot = transform.localRotation;
+        float elapsed = 0f;
 
-        // 1. Obtener referencias
-        PlayerMovement moveScript = player.GetComponent<PlayerMovement>();
-        CharacterController controller = player.GetComponent<CharacterController>();
-        Animator playerAnim = player.GetComponent<Animator>();
+        while (elapsed < openDuration)
+        {
+            float t = elapsed / openDuration;
+            // Smooth-step para movimiento organico (no lineal)
+            t = t * t * (3f - 2f * t);
+            transform.localRotation = Quaternion.Lerp(startRot, targetRot, t);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
 
-        // 2. Bloquear controles del jugador
-        if (moveScript != null) moveScript.enabled = false;
-
-        // 3. "Snap": Mover al jugador al punto exacto (Teletransporte suave)
-        // Esto asegura que la mano toque el handle siempre
-        player.transform.position = playerSnapPoint.position;
-        player.transform.rotation = playerSnapPoint.rotation;
-
-        // 4. Disparar animación del jugador
-        playerAnim.SetTrigger("OpenDoor");
-
-        // 5. Esperar el momento justo para que la puerta se mueva
-        // Aquí puedes usar un Animation Event en el clip del player
-        yield return new WaitForSeconds(interactionDelay);
-        
-        if (doorAnimator != null) doorAnimator.SetTrigger("Open");
-
-        // 6. Esperar a que termine la animación completa (aprox 3-4 segundos)
-        yield return new WaitForSeconds(3.5f);
-
-        // 7. Devolver el control al jugador
-        if (moveScript != null) moveScript.enabled = true;
+        transform.localRotation = targetRot;
         isBusy = false;
     }
+
+    /// <summary>Etiqueta que muestra el HUD segun el estado actual.</summary>
+    public string GetLabel() => isOpen ? labelOpen : labelClosed;
 }
