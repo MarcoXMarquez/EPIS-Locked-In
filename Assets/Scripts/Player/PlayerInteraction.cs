@@ -76,11 +76,26 @@ public class PlayerInteraction : MonoBehaviour
                 return;
             }
 
-            // CASO B: Objeto de PUZZLE
+            // CASO B: PUERTA interactiva
+            InteractiveDoor door = lastHit.collider.GetComponent<InteractiveDoor>();
+            // Tambien busca en el padre por si el collider esta en un hijo del mesh
+            if (door == null) door = lastHit.collider.GetComponentInParent<InteractiveDoor>();
+            if (door != null)
+            {
+                SetCursor(cursorItem);
+                ShowUI("Pulsa [E] para " + door.GetLabel());
+                if (Input.GetKeyDown(KeyCode.E))
+                {
+                    door.Interact(gameObject);
+                }
+                return;
+            }
+
+            // CASO C: Objeto de PUZZLE
             PuzzleObject puzzle = lastHit.collider.GetComponent<PuzzleObject>();
             if (puzzle != null)
             {
-                SetCursor(cursorPuzzle); // Cambiado a cursorPuzzle para diferenciar
+                SetCursor(cursorPuzzle);
                 ShowUI("Usar objeto en " + puzzle.name);
                 if (Input.GetKeyDown(KeyCode.E) || Input.GetMouseButtonDown(0)) 
                 {
@@ -134,7 +149,10 @@ public class PlayerInteraction : MonoBehaviour
         if (promptPanel != null)
         {
             promptPanel.SetActive(true);
-            promptText.text = name;
+            if (promptText != null)
+                promptText.text = name;
+            else
+                Debug.LogWarning("[PlayerInteraction] promptText no esta asignado en el Inspector.");
         }
     }
 

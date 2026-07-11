@@ -59,19 +59,18 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
+        ShikakuManager shikaku = Object.FindAnyObjectByType<ShikakuManager>();
+
+        // SEGURIDAD: Bloqueo si el inventario O el puzzle están abiertos
         if ((inventory != null && inventory.fullMenuOverlay.activeSelf) || 
-         anim.GetCurrentAnimatorStateInfo(0).IsName("Action_PickUp"))
+            (shikaku != null && shikaku.isPuzzleActive) ||
+            anim.GetCurrentAnimatorStateInfo(0).IsName("Action_PickUp"))
         {
             StopMovement();
             return;
         }
 
-        if (isTransitioning)
-        {
-            ApplyGravity();
-            return;
-        }
-
+        if (isTransitioning) { ApplyGravity(); return; }
         Move();
     }
 
