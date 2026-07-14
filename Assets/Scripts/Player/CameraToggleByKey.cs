@@ -46,7 +46,7 @@ public class CameraToggleByKey : MonoBehaviour
         InventoryManager inventory = Object.FindAnyObjectByType<InventoryManager>();
         ShikakuManager shikaku = Object.FindAnyObjectByType<ShikakuManager>();
 
-        if ((inventory != null && inventory.fullMenuOverlay.activeSelf) || 
+        if ((inventory != null ) || 
             (shikaku != null && shikaku.isPuzzleActive))
         {
             return;
